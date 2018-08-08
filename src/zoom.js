@@ -340,17 +340,18 @@ var keyUp = function(e) {
     }
     // Esc while zoomed in: zoom out
     else if ( currentScale > 1
-              && e.keyCode == 27 ) {
+              && e.key == "Escape" ) {
         isZoomMode = true;
         doZoom();
     }
     // Font size shortcuts instead of/after zooming
     else if ( 
         ( isZoomMode || justZoomed )
-        && [0x2B, 0x5F, 0x29, 0xBB, 0xBD, 0x30, 0x3D, 0x2D].includes(e.keyCode)
+        // U+00BB: "»" / U+00BD: "½"
+        && ["+", "_", ")", "\u00BB", "\u00BD", "0", "=", "-"].includes(e.key)
     ) {
-        var enlarge = [0xBB, 0x2B, 0x3D].includes(e.keyCode);
-        var reset = [0x29, 0x30].includes(e.keyCode);
+        var enlarge = ["\u00BB", "+", "="].includes(e.key);
+        var reset = [")", "0"].includes(e.key);
         if ( reset )
             return doResizeText(null, 1/cumulativeFactor);
         else
@@ -363,7 +364,8 @@ var keyUp = function(e) {
         return false;
     }
     // `: Get extension out of the way
-    else if ( [0x60, 0x7E, 0xC0].includes(e.keyCode) ) {
+    // U+00C0: À
+    else if ( ["`", "~", "\u00C0"].includes(e.key) ) {
         tearDown();
         e.stopPropagation();
         e.preventDefault();
