@@ -2,6 +2,7 @@
 Smart zoom!
 Randall Farmer (zoomextension at GMail)
 Context menu support by Sethaurus (henry at ironi nospam dot st)
+Port to Chrome 64 by Sae Yuki
 Public domain, 2010-11
 No warranty
 
@@ -23,6 +24,7 @@ Changes:
         Removed 32x32 icon
         Prettier rect: maroon border and shadow to make it pop
 0.1.7   Context menu support from Sethaurus
+0.1.7.2 Chrome 64 compatibility update
 
 0.1.8 hopes
         Fix bad scroll pos zooming in on content far down the page
@@ -185,7 +187,7 @@ if (domainBlacklist.test(window.location.host)
     return;
 }
 
-var body = document.body;
+var body = document.documentElement;
 var target = undefined;
 var highlighted = undefined;
 var isZoomMode = false;
@@ -314,7 +316,7 @@ function scaleOut() {
 }
 var loaded, cumulativeFactor = 1;
 var keyUp = function(e) {
-    if ( !body && document.body ) body = document.body;
+    if ( !body && document.documentElement ) body = document.documentElement;
     var ae = document.activeElement;
     if ( ae
          && textEntered
@@ -324,7 +326,7 @@ var keyUp = function(e) {
     }
     
     // Shift released: enter zoom mode
-    if ( e.keyIdentifier == 'Shift' 
+    if ( e.key == 'Shift'
          && !(e.metaKey || e.ctrlKey || e.altKey)
          && possibleShiftTap ) {
         possibleShiftTap = false;
@@ -338,17 +340,18 @@ var keyUp = function(e) {
     }
     // Esc while zoomed in: zoom out
     else if ( currentScale > 1
-              && e.keyCode == 27 ) {
+              && e.key == "Escape" ) {
         isZoomMode = true;
         doZoom();
     }
     // Font size shortcuts instead of/after zooming
     else if ( 
         ( isZoomMode || justZoomed )
-        && /^U\+00(2B|5F|29|BB|BD|30|3D|2D)$/.test(e.keyIdentifier) 
+        // U+00BB: "»" / U+00BD: "½"
+        && ["+", "_", ")", "\u00BB", "\u00BD", "0", "=", "-"].includes(e.key)
     ) {
-        var enlarge = /U\+00(BB|2B|3D)/.test(e.keyIdentifier);
-        var reset = /U\+00(29|30)/.test(e.keyIdentifier);
+        var enlarge = ["\u00BB", "+", "="].includes(e.key);
+        var reset = [")", "0"].includes(e.key);
         if ( reset )
             return doResizeText(null, 1/cumulativeFactor);
         else
@@ -361,18 +364,19 @@ var keyUp = function(e) {
         return false;
     }
     // `: Get extension out of the way
-    else if ( /^U\+00(60|7E|C0)$/.test(e.keyIdentifier) ) {
+    // U+00C0: À
+    else if ( ["`", "~", "\u00C0"].includes(e.key) ) {
         tearDown();
         e.stopPropagation();
         e.preventDefault();
         return false;
     }
     // Most other keys: exit zoom mode
-    else if ( /^(Meta|Ctrl|Alt|U\+)/.test(e.keyIdentifier) ) {
+    else if ( /^(Meta|Ctrl|Alt|.)$/.test(e.key) ) {
         possibleShiftTap = false;
         textEntered = true;
         // Space/Shift+Space needn't cancel zoom mode
-        if ( !/^(U\+0020)$/.test(e.keyIdentifier) ) {
+        if ( e.key != " " ) {
             hideOverlay();
             isZoomMode = false;
             justZoomed = false;
@@ -388,7 +392,7 @@ window.addEventListener('scroll', function(e) {
 var textEntered = false;
 var possibleShiftTap = false;
 var keyDown = function(e) {
-    if ( e.keyIdentifier == 'Shift' )
+    if ( e.key == 'Shift' )
         possibleShiftTap = true;
     else
         possibleShiftTap = false;
@@ -457,7 +461,7 @@ function doMouseMove(e, isFake) {
     if ( !isFake ) {
         curX = e.pageX;
         curY = e.pageY;
-        if ( !body && document.body ) body = document.body;
+        if ( !body && document.documentElement ) body = document.documentElement;
         curLeft = body.scrollLeft;
         curTop = body.scrollTop;
     }
@@ -465,7 +469,7 @@ function doMouseMove(e, isFake) {
     // Always zoom out when zoomed in
     if ( currentScale > 1 ) return scaleOut();
     if ( !(curX||curY) ) return;
-    if ( !body && document.body ) body = document.body;
+    if ( !body && document.documentElement ) body = document.documentElement;
     // Adjust x/y if page was scrolled since mouse was moved
     if ( isFake 
          && (curLeft != body.scrollLeft
@@ -558,7 +562,7 @@ function doZoom(e) {
     if ( !isZoomMode ) return;
     isZoomMode = false;
     justZoomed = true;
-    if ( !body && document.body ) body = document.body;
+    if ( !body && document.documentElement ) body = document.documentElement;
     
     // Desired scale
     var scale = window.innerWidth/areaWidth;
@@ -633,7 +637,7 @@ function doZoom(e) {
 window.addEventListener('click',  doZoom, true);
 function loaded() {
     loaded = true;
-    body = document.body;
+    body = document.documentElement;
     if ( window.localStorage.fontSizeZoomFactor )
         doResizeText(undefined, window.localStorage.fontSizeZoomFactor);
 }
