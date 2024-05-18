@@ -25,6 +25,7 @@ Changes:
         Prettier rect: maroon border and shadow to make it pop
 0.1.7   Context menu support from Sethaurus
 0.1.7.2 Chrome 64 compatibility update
+0.1.7.3 Migrated to the manifest v3
 
 0.1.8 hopes
         Fix bad scroll pos zooming in on content far down the page
@@ -663,11 +664,12 @@ var ContextMenu = {
 	captureEvent: function(e) {
 		ContextMenu.lastEvent = e;
 	},
-	triggerZoom: function() {
+	triggerZoom: (message, sender, sendResponse) => {
 		// Simulate an ordinary zoom at the site of the previous right-click
 		isZoomMode = true;
 		doMouseMove(ContextMenu.lastEvent, false);
 		doZoom(ContextMenu.lastEvent);
+        sendResponse();
 	}
 };
 
@@ -677,5 +679,5 @@ document.addEventListener("contextmenu", ContextMenu.captureEvent);
 // When the context menu item is clicked, we will receive an empty request
 // from the background page. We should zoom to the position of the last
 // recorded right-click event.
-chrome.extension.onRequest.addListener(ContextMenu.triggerZoom);
+chrome.runtime.onMessage.addListener(ContextMenu.triggerZoom);
 })()
